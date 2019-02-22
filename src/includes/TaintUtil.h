@@ -55,7 +55,7 @@ ProgramStateRef removeTaint(ProgramStateRef &PS, SymbolRef Sym,
 ProgramStateRef removeTaint(ProgramStateRef &PS, const MemRegion *R,
                                TaintTagType Kind = TaintTagGeneric);
 
-class TaintBugVisitor : public BugReporterVisitorImpl<TaintBugVisitor> {
+class TaintBugVisitor : public BugReporterVisitor {
 protected:
   SymbolRef Symbol;
   const Expr *Expression;
@@ -77,7 +77,7 @@ public:
   }
   
   std::shared_ptr<PathDiagnosticPiece> VisitNode(const ExplodedNode *N,
-                                 const ExplodedNode *PrevN,
+//                                 const ExplodedNode *PrevN,
                                  BugReporterContext &BRC,
                                  BugReport &BR) override;
 };

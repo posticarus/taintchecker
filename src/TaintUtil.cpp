@@ -136,10 +136,10 @@ ProgramStateRef removeTaint(ProgramStateRef &PS, const MemRegion *R,
 }
 
 std::shared_ptr<PathDiagnosticPiece> TaintBugVisitor::VisitNode(const ExplodedNode *N,
-                                                const ExplodedNode *PrevN,
+//                                                const ExplodedNode *PrevN,
                                                 BugReporterContext &BRC,
                                                 BugReport &BR) {
-
+  const ExplodedNode *PrevN = N->getFirstPred();
   ProgramStateRef ProgramState = N->getState();
   ProgramStateRef PrevProgramState = PrevN->getState();
 

@@ -29,12 +29,13 @@
 #include "clang/Basic/Builtins.h"
 #include "clang/AST/StmtVisitor.h"
 #include "clang/StaticAnalyzer/Core/Checker.h"
+#include "clang/StaticAnalyzer/Frontend/CheckerRegistry.h"
 #include "clang/StaticAnalyzer/Core/CheckerManager.h"
 #include "clang/StaticAnalyzer/Core/BugReporter/BugType.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/TaintTag.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/CheckerContext.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ProgramStateTrait.h"
-#include "clang/StaticAnalyzer/Core/CheckerRegistry.h"
+#include "clang/StaticAnalyzer/Core/CheckerManager.h"
 #include "llvm/ADT/MapVector.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -511,7 +512,8 @@ void CustomTaintChecker::checkGenerators(const CallExpr *CE,
         for (unsigned int i = 0; i < CE->getNumArgs(); ++i) {
           const Expr *Arg = CE->getArg(i);
           // Process pointer argument.
-          const Type *ArgTy = Arg->getType().getTypePtr();
+          //const Type *ArgTy = Arg->getType().getTypePtr();
+          const clang::Type *ArgTy = Arg->getType().getTypePtr();
           QualType PType = ArgTy->getPointeeType();
           if ((!PType.isNull() && !PType.isConstQualified()) ||
               (ArgTy->isReferenceType() && !Arg->getType().isConstQualified()))
@@ -798,8 +800,10 @@ bool CustomTaintChecker::isStdin(const Expr *E, CheckerContext &C) {
   if (const VarDecl *D = dyn_cast_or_null<VarDecl>(DeclReg->getDecl())) {
     D = D->getCanonicalDecl();
     if ((D->getName().find("stdin") != StringRef::npos) && D->isExternC())
-      if (const PointerType *PtrTy =
-              dyn_cast<PointerType>(D->getType().getTypePtr()))
+      //if (const PointerType *PtrTy =
+      //        dyn_cast<PointerType>(D->getType().getTypePtr()))
+        if (const clang::PointerType *PtrTy =
+                dyn_cast<clang::PointerType>(D->getType().getTypePtr()))
         if (PtrTy->getPointeeType() == C.getASTContext().getFILEType())
           return true;
   }
@@ -864,7 +868,8 @@ CustomTaintChecker::TaintPropagationRule::process(const CallExpr *CE,
       for (unsigned int i = 0; i < CE->getNumArgs(); ++i) {
         const Expr *Arg = CE->getArg(i);
         // Process pointer argument.
-        const Type *ArgTy = Arg->getType().getTypePtr();
+        //const Type *ArgTy = Arg->getType().getTypePtr();
+        const clang::Type *ArgTy = Arg->getType().getTypePtr();
         QualType PType = ArgTy->getPointeeType();
         if ((!PType.isNull() && !PType.isConstQualified()) ||
             (ArgTy->isReferenceType() && !Arg->getType().isConstQualified()))
@@ -1153,7 +1158,8 @@ bool CustomTaintChecker::EmitReportTaintedOnDestination(
     report->addRange(Expr->getSourceRange());
     report->markInteresting(Symbol);
     report->addVisitor(
-        llvm::make_unique<TaintBugVisitor>(Symbol, Expr, SymbolLookup));
+    //    llvm::make_unique<TaintBugVisitor>(Symbol, Expr, SymbolLookup));
+          llvm::make_unique<taintutil::TaintBugVisitor>(Symbol, Expr, SymbolLookup));
     C.emitReport(std::move(report));
     return true;
   }
@@ -1164,17 +1170,18 @@ void initializationFunction(CheckerManager &mgr){
   CustomTaintChecker *checker =  mgr.registerChecker<CustomTaintChecker>();
   
   std::string ConfigurationFilePath =
-  mgr.getAnalyzerOptions().getOptionAsString("ConfigurationFile", "",
+  mgr.getAnalyzerOptions().getCheckerStringOption("ConfigurationFile", "",
                                              checker);
   std::string DebugFilePath =
-  mgr.getAnalyzerOptions().getOptionAsString("DebugFile", "", checker);
+  mgr.getAnalyzerOptions().getCheckerStringOption("DebugFile", "", checker);
   checker->initialization(ConfigurationFilePath, DebugFilePath);
   
 }
 
 extern "C"
 void clang_registerCheckers(CheckerRegistry &registry){
-  registry.addChecker(&initializationFunction, "alpha.security.taint.CustomTaintPropagation", "Does taint analysis");
+//  registry.addChecker(&initializationFunction, "alpha.security.taint.CustomTaintPropagation", "Does taint analysis");
+    registry.addChecker<CustomTaintChecker>("example.CustomTaintChecker", "Does taint analysis","");
 }
 
 extern "C" const char clang_analyzerAPIVersionString[] =
